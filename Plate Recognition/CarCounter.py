@@ -55,7 +55,8 @@ class CarCounter:
 
         for (i, contour) in enumerate(contours):
             (x, y, w, h) = cv2.boundingRect(contour)
-            contour_valid = (w >= min_contour_width) and (h >= min_contour_height)
+            contour_valid = (w >= min_contour_width) and (
+                h >= min_contour_height)
             if not contour_valid:
                 continue
             centroid = self.get_centroid(x, y, w, h)
@@ -79,7 +80,7 @@ class CarCounter:
         fps = vid_file.get(cv2.CAP_PROP_FPS)
 
         ret, frame = vid_file.read()
-        # 
+        #
         ct = VehicleTracker(detection_zone=self.detection_zone)
 
         while ret:
@@ -93,11 +94,15 @@ class CarCounter:
             for key, car in cars.items():
                 start_point = (car[0][0], car[0][1])
                 end_point = (car[0][0]+car[0][2], car[0][1]+car[0][3])
-                patch = cv2.rectangle(patch, start_point, end_point, color=(100, 45, 255), thickness=2)
-                patch = cv2.putText(patch, f'carId:{key}', start_point, fontFace=4, fontScale=0.6, color=(0, 0, 0), thickness=1)
+                patch = cv2.rectangle(
+                    patch, start_point, end_point, color=(100, 45, 255), thickness=2)
+                patch = cv2.putText(
+                    patch, f'carId:{key}', start_point, fontFace=4, fontScale=0.6, color=(0, 0, 0), thickness=1)
 
-            patch = cv2.putText(patch, f'Vehicle Numbers:{ct.count}', (20, 20), fontFace=4, fontScale=0.6, color=(0, 0, 0), thickness=1)
-            patch = cv2.rectangle(patch, (self.detection_zone[0], self.detection_zone[1]), (self.detection_zone[2], self.detection_zone[3]), color=(78, 252, 3), thickness=1)
+            patch = cv2.putText(patch, f'Vehicle Numbers:{ct.count}', (
+                20, 20), fontFace=4, fontScale=0.6, color=(0, 0, 0), thickness=1)
+            patch = cv2.rectangle(patch, (self.detection_zone[0], self.detection_zone[1]), (
+                self.detection_zone[2], self.detection_zone[3]), color=(78, 252, 3), thickness=1)
             cv2.imshow("frameWindow", patch)
             cv2.imshow("fgmask", filtered_img)
 

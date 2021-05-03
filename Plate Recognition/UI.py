@@ -20,9 +20,14 @@ from openCV_functions import template_matching
 from CarCounter import CarCounter
 
 
-
 class Form:
     def __init__(self, form, length, width):
+        """
+        
+        :param form:
+        :param length:
+        :param width:
+        """
         # Form Control Setting
         self.form = form
         self.length = length
@@ -45,7 +50,7 @@ class Form:
         self.label_locate = Label(
             self.form, text='License Plate Location:', font=('TIMES NEW ROMAN', 13, 'bold')).place(x=50, y=620)
         self.label_identify = Label(
-            self.form, text='The Identifying Results:', font=('TIMES NEW ROMAN', 13, 'bold')).place(x=50, y=710)
+            self.form, text='Identification Results:', font=('TIMES NEW ROMAN', 13, 'bold')).place(x=53, y=710)
         self.label_model = Label(self.form, text='Vehicle Model / Colour:', font=(
             'TIMES NEW ROMAN', 15, 'bold')).place(x=565, y=470)
         self.label_result = Label(self.form, text='Result...', font=(
