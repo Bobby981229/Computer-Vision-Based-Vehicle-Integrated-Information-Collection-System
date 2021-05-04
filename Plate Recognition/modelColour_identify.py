@@ -1,4 +1,6 @@
-# encoding:utf-8
+"""
+Recognize the make, model, color, year of the vehicle
+"""
 import json
 import http.client  # 修改引用的模块
 import hashlib  # 修改引用的模块

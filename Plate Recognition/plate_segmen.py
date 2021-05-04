@@ -1,3 +1,6 @@
+"""
+Segmentation of license plate areas using the U-net model
+"""
 import os
 import cv2
 import numpy as np

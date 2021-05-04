@@ -23,7 +23,7 @@ from CarCounter import CarCounter
 class Form:
     def __init__(self, form, length, width):
         """
-        
+
         :param form:
         :param length:
         :param width:
@@ -102,6 +102,7 @@ class Form:
         cnn_predict(self.cnn, [np.zeros((80, 240, 3))])
 
     def opevCV_matching(self):
+        self.canvas_org.delete('all')  # Delete the image on the canvas
         # Step 1. Image Pre-processing
         root = tk.Tk()
         root.withdraw()
@@ -119,29 +120,33 @@ class Form:
         carLicense_image = license_image(image)
 
         # Step 2. Split the License Numbers and Characters
-        image = carLicense_image.copy()
-        word_images = license_spilt(image)
+        try:
+            image = carLicense_image.copy()
+            word_images = license_spilt(image)
+        except:
+            tk.messagebox.showerror(
+                'Error', 'Unable to segment license plate area!')
+        else:
+            # Step 3. Characters and Numbers Matching with Template
+            word_images_ = word_images.copy()
+            result = template_matching(word_images_)
+            print('Recognition Result:', result)
+            tk.messagebox.showinfo('Result', result)
 
-        # Step 3. Characters and Numbers Matching with Template
-        word_images_ = word_images.copy()
-        result = template_matching(word_images_)
-        print(result)
-        tk.messagebox.showinfo('Result', result)
+            # Step 4. Image Rendering
+            width, weight = original_image.shape[0:2]
+            # 中文无法显示
+            image = original_image.copy()
+            cv.rectangle(image, (int(0.2 * weight), int(0.75 * width)),
+                         (int(weight * 0.8), int(width * 0.95)), (0, 255, 0), 5)
+            cv.putText(image, "".join(result), (int(0.2 * weight) + 30,
+                                                int(0.75 * width) + 80), cv.FONT_HERSHEY_COMPLEX, 2, (0, 255, 0), 8)
+            plt_show_raw(image)
 
-        # Step 4. Image Rendering
-        width, weight = original_image.shape[0:2]
-        # 中文无法显示
-        image = original_image.copy()
-        cv.rectangle(image, (int(0.2 * weight), int(0.75 * width)),
-                     (int(weight * 0.8), int(width * 0.95)), (0, 255, 0), 5)
-        cv.putText(image, "".join(result), (int(0.2 * weight) + 30,
-                                            int(0.75 * width) + 80), cv.FONT_HERSHEY_COMPLEX, 2, (0, 255, 0), 8)
-        plt_show_raw(image)
-
-        cv.imshow('License Plate', image)
-        cv.waitKey(0)
-        cv.destroyAllForms()
-        self.clear()
+            cv.imshow('License Plate', image)
+            cv.waitKey(0)
+            cv.destroyAllForms()
+            self.clear()
 
     def model_colour(self):
         if self.imgOrg_path == None:  # 还没选择图片就进行预测
@@ -156,14 +161,17 @@ class Form:
         self.clear()
         sv = StringVar()
         sv.set(askopenfilename())
-        self.imgOrg_path = Entry(
-            self.form, state='readonly', text=sv).get()  # 获取到所打开的图片
-        img_open = Image.open(self.imgOrg_path)
-        if img_open.size[0] * img_open.size[1] > 240 * 80:
-            img_open = img_open.resize((512, 512), Image.ANTIALIAS)
-        self.img_Tk = ImageTk.PhotoImage(img_open)
-        self.canvas_org.create_image(
-            258, 258, image=self.img_Tk, anchor='center')
+        try:
+            self.imgOrg_path = Entry(
+                self.form, state='readonly', text=sv).get()  # 获取到所打开的图片
+            img_open = Image.open(self.imgOrg_path)
+            if img_open.size[0] * img_open.size[1] > 240 * 80:
+                img_open = img_open.resize((512, 512), Image.ANTIALIAS)
+            self.img_Tk = ImageTk.PhotoImage(img_open)
+            self.canvas_org.create_image(
+                258, 258, image=self.img_Tk, anchor='center')
+        except:
+            tk.messagebox.showerror('Error', 'Failed to open a image!')
 
     def display(self):
         if self.imgOrg_path == None:  # 还没选择图片就进行预测
@@ -277,9 +285,8 @@ class Form:
         self.canvas_locate_1.delete('all')
         self.canvas_locate_2.delete('all')
         self.canvas_identify_1.delete('all')
-        self.canvas_identify_2.delete()
+        self.canvas_identify_2.delete('all')
         self.imgOrg_path = None
-        # self.label_result['text'] = "Result..."
 
     def quit_program(self):
         quit = tk.messagebox.askokcancel(

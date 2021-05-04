@@ -39,4 +39,9 @@ def opevCV_matching():
     plt_show_raw(image)
 
 
-opevCV_matching()
+def main():
+    opevCV_matching()
+
+
+if __name__ == '__main__':
+    main()

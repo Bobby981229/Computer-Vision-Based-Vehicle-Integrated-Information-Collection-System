@@ -27,7 +27,7 @@ def plt_show_grey(img):
 
 
 # 图像去噪灰度处理
-def gray_guss(image):
+def gray_gauss(image):
     image = cv.GaussianBlur(image, (3, 3), 0)
     gray_image = cv.cvtColor(image, cv.COLOR_RGB2GRAY)
     return gray_image
@@ -35,7 +35,7 @@ def gray_guss(image):
 
 # 提取车牌部分图片
 def license_image(images):
-    image_gray = gray_guss(images)  # 高斯&灰度降噪
+    image_gray = gray_gauss(images)  # 高斯&灰度降噪
     # Sobel 算子边缘检测 (Y方向上的检测)
     Sobel_x = cv.Sobel(image_gray, cv.CV_16S, 1, 0)  # x, y
     absX = cv.convertScaleAbs(Sobel_x)  # 转为unit 8
@@ -75,10 +75,10 @@ def license_image(images):
         rect = cv.boundingRect(item)
         x = rect[0]
         y = rect[1]
-        weight = rect[2]  # 宽度
+        width = rect[2]  # 宽度
         height = rect[3]  # 高度
-        if (weight > (height * 3)) and (weight < (height * 4)):
-            image = images[y:y + height, x:x + weight]
+        if (width > (height * 3)) and (width < (height * 4)):
+            image = images[y:y + height, x:x + width]
             plt_show_raw(image)
             # cv.imwrite('../images/test1_result.png', image)
             return image
@@ -86,7 +86,7 @@ def license_image(images):
 
 # 车牌字母和数字分离
 def license_spilt(image):
-    gray_image = gray_guss(image)
+    gray_image = gray_gauss(image)
     ret, image = cv.threshold(gray_image, 0, 255, cv.THRESH_OTSU)
     plt_show_grey(image)
     # 计算二值图像黑白点的个数，处理绿牌照问题，让车牌号码始终为白色

@@ -1,6 +1,13 @@
 import cv2
 import numpy
 import matplotlib
+import tkinter as tk
+import tkinter.messagebox
+from tkinter import *
+from tkinter import filedialog
+from tkinter.filedialog import askopenfilename
+from IPython.terminal.pt_inputhooks import tk
+
 from ObjectTracker import VehicleTracker
 
 
@@ -72,7 +79,7 @@ class CarCounter:
             return
 
         if not vid_file.isOpened():
-            print("capture stream not open")
+            tk.messagebox.showerror('Error', 'Failed to open a video!')
             return
 
         back_sub = cv2.createBackgroundSubtractorKNN(dist2Threshold=1000.0)
