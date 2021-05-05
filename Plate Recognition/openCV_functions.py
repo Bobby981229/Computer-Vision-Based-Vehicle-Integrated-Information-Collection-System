@@ -36,6 +36,7 @@ def gray_gauss(image):
 # 提取车牌部分图片
 def license_image(images):
     image_gray = gray_gauss(images)  # 高斯&灰度降噪
+    plt_show_grey(image_gray)
     # Sobel 算子边缘检测 (Y方向上的检测)
     Sobel_x = cv.Sobel(image_gray, cv.CV_16S, 1, 0)  # x, y
     absX = cv.convertScaleAbs(Sobel_x)  # 转为unit 8
@@ -69,7 +70,7 @@ def license_image(images):
     cv.drawContours(image_rawEdge, contours, -1, (0, 255), 5)
     plt_show_raw(image_rawEdge)
     # 筛选出车牌位置的轮廓
-    # 3:1 or 4:1 的长宽比开判断
+    # 3:1 or 4:1 的长宽比开作为判断依据
     for item in contours:
         # cv.boundingRect是一个矩形
         rect = cv.boundingRect(item)
@@ -207,11 +208,11 @@ def template_score(template, image):
     template_img = cv.cvtColor(template_img, cv.COLOR_RGB2GRAY)  # 灰度处理
     ret, template_img = cv.threshold(
         template_img, 0, 255, cv.THRESH_OTSU)  # 阈值处理
-    image_ = image.copy()
-    height, width = image_.shape  # 目标图片和模板的尺寸要相同
+    image_input = image.copy()
+    height, width = image_input.shape  # 目标图片和模板的尺寸要相同
     template_img = cv.resize(template_img, (width, height))  # 改变指定图片的尺寸大小
     # cv.TM_CCOEFF 计算相关系数, 返回值越大越相似
-    result = cv.matchTemplate(image_, template_img,
+    result = cv.matchTemplate(image_input, template_img,
                               cv.TM_CCOEFF)  # 模板匹配 (图片, 模板, 参数)
     return result[0][0]
 

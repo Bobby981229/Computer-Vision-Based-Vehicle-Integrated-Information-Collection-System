@@ -83,17 +83,17 @@ def boundingRect_show(slant_image):
             image = slant_image[y:y + height, x:x + weight]
             # 图像保存
             plt_show_raw(image)
-            cv.imwrite('../images/test000.png', image)
+            # cv.imwrite('../images/test000.png', image)
             return image
 
 
 # 计算斜率
 def calculate_slope(image, contour):
-    cnt = contour[1]
+    cnt = contour[1]  # 轮廓上的坐标点
     image3 = image.copy()
 
     h, w = image3.shape[:2]
-    [vx, vy, x, y] = cv.fitLine(cnt, cv.DIST_L2, 0, 0.01, 0.01)
+    [vx, vy, x, y] = cv.fitLine(cnt, cv.DIST_L2, 0, 0.01, 0.01)  # 返回方向向量和x,y轴上的坐标点
     print([vx, vy, x, y])
 
     k = vy / vx  # Calculate Slope
