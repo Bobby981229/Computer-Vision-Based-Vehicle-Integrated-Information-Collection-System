@@ -20,29 +20,29 @@ class CarCounter:
 
     def rescale_frame(self, frame, percent=0.9):
         """
-        缩小原来大小的0.9倍
-        :param frame:
-        :param percent:
-        :return:
+        Reduce the size by 0.9 times
+        :param frame: windows frame
+        :param percent: minification
+        :return: a frame with new size
         """
         width = int(frame.shape[1] * percent)
         height = int(frame.shape[0] * percent)
-        dim = (width, height)
-        return cv2.resize(frame, dim, interpolation=cv2.INTER_AREA)
+        new_size = (width, height)  # width and height after resize
+        return cv2.resize(frame, new_size, interpolation=cv2.INTER_AREA)
 
     def filter_mask(self, img):
         """
-        对视频进行预处理
+        The video is preprocessed - morphological processing
         :param img:
-        :return:
+        :return: inary image
         """
         kernel = cv2.getStructuringElement(cv2.MORPH_CROSS, (2, 2))
-        closing = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel)
-        opening = cv2.morphologyEx(closing, cv2.MORPH_OPEN, kernel)
+        closing = cv2.morphologyEx(img, cv2.MORPH_CLOSE, kernel)  # closing operation
+        opening = cv2.morphologyEx(closing, cv2.MORPH_OPEN, kernel)  # opening operation
         dilation = cv2.dilate(opening, kernel, iterations=1)
         retval, threshold = cv2.threshold(
             dilation, 155, 255, cv2.THRESH_BINARY)
-        threshold = cv2.GaussianBlur(threshold, (5, 5), 1)
+        threshold = cv2.GaussianBlur(threshold, (5, 5), 1)  # Gaussian blur algorithm.
 
         return threshold
 

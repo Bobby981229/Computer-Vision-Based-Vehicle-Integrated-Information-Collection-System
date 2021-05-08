@@ -38,6 +38,7 @@ def unet_train():
 
     # Shrinkage module C1
     input = layers.Input(shape=(height, width, 3))
+
     conv1 = ContractingPathBlock(input, 8, (3, 3))
     conv1 = ContractingPathBlock(conv1, 8, (3, 3))
     pool1 = layers.MaxPooling2D(pool_size=(2, 2), strides=(2, 2), padding='same')(conv1)
@@ -59,6 +60,7 @@ def unet_train():
     conv5 = ContractingPathBlock(conv5, 128, (3, 3))
     conv5 = layers.Dropout(0.5)(conv5)
 
+    # 上采样后横向拼接
     convt1 = ExpansivePathBlock(conv5, 64, (3, 3))
     concat1 = layers.concatenate([conv4, convt1], axis=3)
     concat1 = layers.Dropout(0.5)(concat1)
@@ -82,6 +84,7 @@ def unet_train():
     concat4 = layers.Dropout(0.5)(concat4)
     conv9 = ContractingPathBlock(concat4, 8, (3, 3))
     conv9 = ContractingPathBlock(conv9, 8, (3, 3))
+
     conv9 = layers.Dropout(0.5)(conv9)
     outpt = layers.Conv2D(filters=3, kernel_size=(1, 1), strides=(1, 1), padding='same', activation='relu')(conv9)
 
@@ -92,8 +95,8 @@ def unet_train():
                   metrics=['accuracy'])
     model.summary()
 
-    print("开始训练u-net")
-    model.fit(X_train, y_train, epochs=10, batch_size=15)  # epochs和batch_size看个人情况调整，batch_size不要过大，否则内存容易溢出
+    print("Start training U-Net model...")
+    model.fit(X_train, y_train, epochs=20, batch_size=16)  #
     # 训练最终loss降低至250左右，acc约95%左右
     model.save('unet_green10test.h5')
     print('unet_greenModel10.h5保存成功!!!')

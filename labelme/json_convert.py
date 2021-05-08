@@ -2,13 +2,13 @@ import os
 import cv2
 import numpy as np
 
-path = r'../labelme/json/'  # path为json文件存放的路径
+path = r'../labelme/json_green/'  # path为json文件存放的路径
 json_file = os.listdir(path)  # /json文件夹下的所有json文件
 items_num = len(json_file)  # json文件的个数
 
 # 将json文件label转换为到data文件夹
 for i in range(items_num):
-    os.system('labelme_json_to_dataset ../labelme/json/%d.json -o ../labelme/data/%d_json' % (i, i))
+    os.system('labelme_json_to_dataset ../labelme/json_green/%d.json -o ../labelme/data/%d_json' % (i, i))
 
 
 #  如果文件夹不存在, 则创建一个新的文件夹

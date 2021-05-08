@@ -28,6 +28,7 @@ def locate_and_correct(img_src, img_mask):
         for ii, cont in enumerate(contours):
             x, y, w, h = cv2.boundingRect(cont)  # 获取最小外接矩形
             img_cut_mask = img_mask[y:y + h, x:x + w]  # 将标签车牌区域截取出来
+
             # cv2.imshow('img_cut_mask',img_cut_mask)
             # cv2.waitKey(0)
             # print('w,h,均值,宽高比',w,h,np.mean(img_cut_mask),w/h)
@@ -36,10 +37,12 @@ def locate_and_correct(img_src, img_mask):
             if np.mean(img_cut_mask) >= 75 and w > 15 and h > 15:
                 rect = cv2.minAreaRect(cont)  # 针对坐标点获取带方向角的最小外接矩形，中心点坐标，宽高，旋转角度
                 box = cv2.boxPoints(rect).astype(np.int32)  # 获取最小外接矩形四个顶点坐标
+
                 # cv2.drawContours(img_mask, contours, -1, (0, 0, 255), 2)
                 # cv2.drawContours(img_mask, [box], 0, (0, 255, 0), 2)
                 # cv2.imshow('img_mask',img_mask)
                 # cv2.waitKey(0)
+
                 cont = cont.reshape(-1, 2).tolist()
                 # 由于转换矩阵的两组坐标位置需要一一对应，因此需要将最小外接矩形的坐标进行排序，最终排序为[左上，左下，右上，右下]
                 box = sorted(box, key=lambda xy: xy[0])  # 先按照左右进行排序，分为左侧的坐标和右侧的坐标
@@ -104,7 +107,7 @@ def erode(image):
     # print(image.shape)
     gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
     ret, binary = cv2.threshold(gray, 0, 255, cv2.THRESH_BINARY | cv2.THRESH_OTSU)
-    # cv.imshow("binary", binary)
+    # cv2.imshow("binary", binary)
     kernel = cv2.getStructuringElement(cv2.MORPH_RECT, (15, 15))  # 定义结构元素的形状和大小
     dst = cv2.erode(binary, kernel)  # 腐蚀操作
     # cv2.imshow("erode_demo", dst)

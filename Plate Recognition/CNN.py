@@ -1,4 +1,4 @@
-from tensorflow.keras import layers, losses, models
+from tensorflow.keras import layers, models
 import numpy as np
 import cv2
 import os
@@ -16,7 +16,7 @@ def cnn_train():
     # 读取数据集
     path = 'home/cnn_datasets/'  # 车牌号数据集路径(车牌图片宽240，高80)
     pic_name = sorted(os.listdir(path))
-    n = len(pic_name)
+    n = len(pic_name)  # 图像名称 (license plate number)
     X_train, y_train = [], []
     for i in range(n):
         print("正在读取第%d张图片" % i)
@@ -47,20 +47,21 @@ def cnn_train():
                   metrics=['accuracy'])
 
     # 模型训练
-    print("开始训练cnn")
+    print("Start training CNN model...")
     model.fit(X_train, y_train, epochs=35)  # 总loss为7个loss的和
     model.save('cnn.h5')
     print('cnn.h5保存成功!!!')
 
 
-def cnn_predict(cnn, Lic_img):
+# License Plate Recognition
+def cnn_predict(cnn_model, plate_image):
     characters = ["京", "沪", "津", "渝", "冀", "晋", "蒙", "辽", "吉", "黑", "苏", "浙", "皖", "闽", "赣", "鲁", "豫",
                   "鄂", "湘", "粤", "桂", "琼", "川", "贵", "云", "藏", "陕", "甘", "青", "宁", "新", "0", "1", "2",
                   "3", "4", "5", "6", "7", "8", "9", "A", "B", "C", "D", "E", "F", "G", "H", "J", "K", "L", "M",
                   "N", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z"]
     Lic_pred = []
-    for lic in Lic_img:
-        lic_pred = cnn.predict(lic.reshape(1, 80, 240, 3))  # 预测形状应为(1,80,240,3)
+    for lic in plate_image:
+        lic_pred = cnn_model.predict(lic.reshape(1, 80, 240, 3))  # 预测形状应为(1,80,240,3)
         lic_pred = np.array(lic_pred).reshape(7, 65)  # 列表转为ndarray，形状为(7,65)
         if len(lic_pred[lic_pred >= 0.8]) >= 4:  # 统计其中预测概率值大于80%以上的个数，大于等于4个以上认为识别率高，识别成功
             chars = ''
