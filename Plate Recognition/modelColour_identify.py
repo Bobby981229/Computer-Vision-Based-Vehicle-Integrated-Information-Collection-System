@@ -1,9 +1,9 @@
 """
-Recognize the make, model, color, year of the vehicle
+Recognize the make, model, color, year of the vehicle by BaiDu API
 """
 import json
-import http.client  # 修改引用的模块
-import hashlib  # 修改引用的模块
+import http.client
+import hashlib
 from urllib import parse
 import random
 import base64
@@ -14,16 +14,16 @@ import requests
 def translation(text):
     """
     Translate text via Baidu API
-    :param text:
-    :return:
+    :param text: text need to translate
+    :return:  text after translating
     """
     appid = '20210412000774999'  # App ID in Baidu API
     secretKey = 'GVf5TNLMrjlZ1sCushsZ'  # Secret Key in Baidu API
 
     httpClient = None
     myurl = '/api/trans/vip/translate'
-    fromLang = 'zh'  # 原文语种
-    toLang = 'en'  # 译文语种
+    fromLang = 'zh'  # Original language - Chinese
+    toLang = 'en'  # Translation Language - English
     salt = random.randint(32768, 65536)
 
     sign = appid + text + str(salt) + secretKey
@@ -38,7 +38,7 @@ def translation(text):
         httpClient = http.client.HTTPConnection('api.fanyi.baidu.com')
         httpClient.request('GET', myurl)
         response = httpClient.getresponse()
-        # 转码
+        # Transcoding
         html = response.read().decode('utf-8')
         html = json.loads(html)
         dst = html["trans_result"][0]["dst"]
@@ -54,15 +54,16 @@ def translation(text):
 def car_model(path):
     """
     Vehicle model recognition via Baidu API
-    :return:
+    :param path: Vehicle image path
+    :return: Recognition results
     """
-    # # client_id 为官网获取的AK， client_secret 为官网获取的SK
+    # # client_id -> ak， client_secret -> sk
     # host = 'https://aip.baidubce.com/oauth/2.0/token?grant_type=client_credentials&client_id=KWyIaUr2hg3jaaMBKGLGOnRP&client_secret=OopxV3wv036xXyb2GXeXsL6aCffO2hCL'
     # response = requests.get(host)
     # if response:
     #     print(response.json())
     request_url = "https://aip.baidubce.com/rest/2.0/image-classify/v1/car"
-    # 二进制方式打开图片文件
+    # Binary way to open image files
     f = open(path, 'rb')
     img = base64.b64encode(f.read())
 
@@ -78,7 +79,7 @@ def car_model(path):
         brand_name = all_result['result'][0]['name']
         model_year = all_result['result'][0]['year']
         car_colour = all_result['color_result']
-
+        # Recognition: make, colour, model, year
         result_trans = translation(brand_name + car_colour + model_year)
         print(result_trans)
 

@@ -5,8 +5,12 @@ import tensorflow as tf
 from tensorflow.keras import layers, models
 
 
-def unet_train():
-    height = 512
+def u_net_train():
+    """
+    Training a U-Net model for predicting licence plate position
+    :return: U-Net Model
+    """
+    height = 512  # image size is 512 × 512
     width = 512
     path = '../labelme/'
     items_names = os.listdir(path + 'train_image_green')
@@ -14,7 +18,7 @@ def unet_train():
     print(items_numbers)
     X_train, y_train = [], []
     for i in range(items_numbers):
-        print("正在读取第%d张图片" % i)
+        print("Reading the No. %d image" % i)
         img = cv2.imread(path + 'train_image_green/%d.png' % i)
         label = cv2.imread(path + 'train_label_green/%d.png' % i)
         X_train.append(img)
@@ -36,7 +40,7 @@ def unet_train():
         x = layers.LeakyReLU(alpha=0.1)(x)
         return x
 
-    # Shrinkage module C1
+    # Iterative Shrinkage Module
     input = layers.Input(shape=(height, width, 3))
 
     conv1 = ContractingPathBlock(input, 8, (3, 3))
@@ -60,7 +64,7 @@ def unet_train():
     conv5 = ContractingPathBlock(conv5, 128, (3, 3))
     conv5 = layers.Dropout(0.5)(conv5)
 
-    # 上采样后横向拼接
+    # Up-sampled and concatenate
     convt1 = ExpansivePathBlock(conv5, 64, (3, 3))
     concat1 = layers.concatenate([conv4, convt1], axis=3)
     concat1 = layers.Dropout(0.5)(concat1)
@@ -89,39 +93,37 @@ def unet_train():
     outpt = layers.Conv2D(filters=3, kernel_size=(1, 1), strides=(1, 1), padding='same', activation='relu')(conv9)
 
     model = models.Model(input, outpt)
-    sgd = tf.keras.optimizers.SGD(lr=0.001, decay=1e-6, momentum=0.9, nesterov=True)  # 根据自己需要进行调整，我这里选择的是SGD
+    sgd = tf.keras.optimizers.SGD(lr=0.001, decay=1e-6, momentum=0.9, nesterov=True)
     model.compile(optimizer=sgd,
                   loss='mean_squared_error',
                   metrics=['accuracy'])
     model.summary()
 
     print("Start training U-Net model...")
-    model.fit(X_train, y_train, epochs=20, batch_size=16)  #
-    # 训练最终loss降低至250左右，acc约95%左右
-    model.save('unet_green10test.h5')
-    print('unet_greenModel10.h5保存成功!!!')
+    model.fit(X_train, y_train, epochs=20, batch_size=16)  # Parameter settings
+    model.save('../models/unet_green.h5')
+    print('unet_greenModel10.h5 Saved successfully!!!')
 
 
-def unet_predict(unet, img_src_path):
-    img_src = cv2.imdecode(np.fromfile(img_src_path, dtype=np.uint8), -1)  # 从中文路径读取时用
+def u_net_predict(u_net, img_path):
+    img_origin = cv2.imdecode(np.fromfile(img_path, dtype=np.uint8), -1)  #
     # img_src=cv2.imread(img_src_path)
-    if img_src.shape != (512, 512, 3):
-        # dsize=(宽度,高度),[:,:,:3]是防止图片为4通道图片，后续无法reshape
-        img_src = cv2.resize(img_src, dsize=(512, 512), interpolation=cv2.INTER_AREA)[:, :, :3]
-    img_src = img_src.reshape(1, 512, 512, 3)  # 预测图片shape为(1,512,512,3)
-    img_mask = unet.predict(img_src)  # 归一化除以255后进行预测
-    img_src = img_src.reshape(512, 512, 3)  # 将原图reshape为3维
-    img_mask = img_mask.reshape(512, 512, 3)  # 将预测后图片reshape为3维
-    img_mask = img_mask / np.max(img_mask) * 255  # 归一化后乘以255
-    img_mask[:, :, 2] = img_mask[:, :, 1] = img_mask[:, :, 0]  # 三个通道保持相同
-    img_mask = img_mask.astype(np.uint8)  # 将img_mask类型转为int型
+    if img_origin.shape != (512, 512, 3):
+        img_origin = cv2.resize(img_origin, dsize=(512, 512), interpolation=cv2.INTER_AREA)[:, :, :3]
+    img_origin = img_origin.reshape(1, 512, 512, 3)  # The predicted image shape is (1,512,512,3)
+    img_mask = u_net.predict(img_origin)  # normalization, divide by 255 to make a prediction
+    img_origin = img_origin.reshape(512, 512, 3)  # Reshape the original image to 3 dimensions
+    img_mask = img_mask.reshape(512, 512, 3)  # Reshape the predicted image to 3 dimensions
+    img_mask = img_mask / np.max(img_mask) * 255  # Normalised and multiplied by 255
+    img_mask[:, :, 2] = img_mask[:, :, 1] = img_mask[:, :, 0]  # All three channels remain the same
+    img_mask = img_mask.astype(np.uint8)  # Convert img_mask type to int type
 
-    return img_src, img_mask
+    return img_origin, img_mask
 
 
 def main():
     """Set the parameters and call the functions"""
-    unet_train()  # 训练后得到unet.h5,用于车牌定位
+    u_net_train()  # trained to get unet.h5, which is used for license plate positioning
 
 
 if __name__ == "__main__":

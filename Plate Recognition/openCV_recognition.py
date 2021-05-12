@@ -1,4 +1,3 @@
-# 导入所需的模块
 import cv2 as cv
 import tkinter as tk
 import tkinter.messagebox
@@ -30,7 +29,6 @@ def opevCV_matching():
 
     # Step 4. Image Rendering
     height, weight = original_image.shape[0:2]
-    # 中文无法显示
     image = original_image.copy()
     cv.rectangle(image, (int(0.2 * weight), int(0.75 * height)), (int(weight * 0.8), int(height * 0.95)), (0, 255, 0),
                  5)

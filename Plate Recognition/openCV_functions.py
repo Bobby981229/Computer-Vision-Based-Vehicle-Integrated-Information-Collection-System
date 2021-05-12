@@ -1,83 +1,85 @@
-# 导入所需的模块
 import os
 import cv2 as cv
 import numpy as np
 from matplotlib import pyplot as plt
 
 
-# 显示图片
+# Shown image
 def cv_show(name, img):
     cv.imshow(name, img)
     cv.waitKey()
     cv.destroyAllWindows()
 
 
-# plt 显示彩色图像
+# plt Show origin image
 def plt_show_raw(img):
-    b, g, r = cv.split(img)  # 拆分
-    img = cv.merge([r, g, b])  # 组合
-    plt.imshow(img)  # 显示图像
+    b, g, r = cv.split(img)  # split image by three channel
+    img = cv.merge([r, g, b])  # merge
+    plt.imshow(img)
     plt.show()
 
 
-# plt 显示灰度图像
+# plt Display grayscale image
 def plt_show_grey(img):
-    plt.imshow(img, cmap='gray')  # 指定为灰度图
+    plt.imshow(img, cmap='gray')  # Specifies as a grayscale image
     plt.show()
 
 
-# 图像去噪灰度处理
+# Image denoising and grayscale processing
 def gray_gauss(image):
     image = cv.GaussianBlur(image, (3, 3), 0)
     gray_image = cv.cvtColor(image, cv.COLOR_RGB2GRAY)
     return gray_image
 
 
-# 提取车牌部分图片
 def license_image(images):
-    image_gray = gray_gauss(images)  # 高斯&灰度降噪
+    """
+    Get license plate picture
+    :param images: Vehicle image
+    :return: licence plate image
+    """
+    image_gray = gray_gauss(images)  # Gaussian & grayscale noise reduction
     plt_show_grey(image_gray)
-    # Sobel 算子边缘检测 (Y方向上的检测)
+    # Sobel operator edge detection (detection in the Y direction)
     Sobel_x = cv.Sobel(image_gray, cv.CV_16S, 1, 0)  # x, y
     absX = cv.convertScaleAbs(Sobel_x)  # 转为unit 8
     image_edge = absX
     plt_show_grey(image_edge)
-    # 自适应的阈值处理
+    # Adaptive threshold processing
     ret, image = cv.threshold(image_edge, 0, 255, cv.THRESH_OTSU)
     plt_show_grey(image)
-    # 闭运算， 白色部位看成一个整体
+    # Closed, white parts seen as a whole
     kernelX = cv.getStructuringElement(cv.MORPH_OPEN, (17, 5))
     image = cv.morphologyEx(image, cv.MORPH_CLOSE, kernelX, iterations=3)
     plt_show_grey(image)
-    # 去除一些白点
+    # Removal of some white spots
     kernelX = cv.getStructuringElement(cv.MORPH_RECT, (20, 1))
     kernelY = cv.getStructuringElement(cv.MORPH_RECT, (1, 19))
-    # 膨胀, 腐蚀
+    # Expansion and corrosion
     image = cv.dilate(image, kernelX)
     image = cv.erode(image, kernelX)
-    # 腐蚀, 膨胀
+    # Corrosion and expansion
     image = cv.erode(image, kernelY)
     image = cv.dilate(image, kernelY)
     plt_show_grey(image)
-    # 中值滤波去噪点
+    # Median filtering to remove noise
     image = cv.medianBlur(image, 15)
     plt_show_grey(image)
-    # 轮廓检测
+    # Contours detection
     contours, hierarchy = cv.findContours(
         image, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-    # 绘制轮廓
+    # Draw the contours
     image_rawEdge = images.copy()
     cv.drawContours(image_rawEdge, contours, -1, (0, 255), 5)
     plt_show_raw(image_rawEdge)
-    # 筛选出车牌位置的轮廓
-    # 3:1 or 4:1 的长宽比开作为判断依据
+    # Get the outline of the license plate position
+    # Aspect ratio of 3:1 or 4:1 to judgement
     for item in contours:
-        # cv.boundingRect是一个矩形
         rect = cv.boundingRect(item)
         x = rect[0]
         y = rect[1]
-        width = rect[2]  # 宽度
-        height = rect[3]  # 高度
+        width = rect[2]  # width
+        height = rect[3]  # high
         if (width > (height * 3)) and (width < (height * 4)):
             image = images[y:y + height, x:x + width]
             plt_show_raw(image)
@@ -85,12 +87,16 @@ def license_image(images):
             return image
 
 
-# 车牌字母和数字分离
 def license_spilt(image):
+    """
+    Separation of licence plate letters and numbers
+    :param image: licence plate image
+    :return: characters images
+    """
     gray_image = gray_gauss(image)
     ret, image = cv.threshold(gray_image, 0, 255, cv.THRESH_OTSU)
     plt_show_grey(image)
-    # 计算二值图像黑白点的个数，处理绿牌照问题，让车牌号码始终为白色
+    # Calculate the number of black and white dots
     area_white = 0
     area_black = 0
     height, width = image.shape
@@ -104,16 +110,15 @@ def license_spilt(image):
         ret, image = cv.threshold(
             image, 0, 255, cv.THRESH_OTSU | cv.THRESH_BINARY_INV)
         plt_show_grey(image)
-    # 闭运算,是白色部分练成整体
+    # Close operation, the white part is practiced as a whole
     kernel = cv.getStructuringElement(cv.MORPH_RECT, (2, 2))
     image = cv.dilate(image, kernel)
     contours, hierarchy = cv.findContours(
         image, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_SIMPLE)
-    # 筛选出各个字符的位置的轮廓
+    # Filter the outline of the position of the individual characters
     words = []
     word_images = []
     for item in contours:
-        # cv2.boundingRect用一个最小的矩形，把找到的形状包起来
         word = []
         rect = cv.boundingRect(item)
         x = rect[0]
@@ -134,131 +139,156 @@ def license_spilt(image):
                                 word[3], word[0]:word[0] + word[2]]
             word_images.append(split_image)
             # cv.imwrite('../words/' + str(i) + '.png', split_image)
-    # 绿牌要改为8，蓝牌为7，显示所用
+    # The green plate is to be changed to 8
     for k, z in enumerate(word_images):
         plt.subplot(1, i, k + 1)
         plt.imshow(word_images[k], cmap='gray')
     plt.show()
-
     return word_images
 
 
-# 图像匹配前预处理
 def pre_processing(path):
-    # 显示原图
+    """
+    Pre-processing before image matching
+    :param path: image path
+    :return: original, gray and threshold images
+    """
+    # Show original image
     img_raw = cv.imread(path)
     plt_show_raw(img_raw)
-    # 高斯降噪
+    # Gaussian noise
     img_Gaussian = cv.GaussianBlur(img_raw, (3, 3), 0)
-    # 灰度处理, 二值化处理
+    # Gray scale processing, binary processing
     img_gray = cv.cvtColor(img_Gaussian, cv.COLOR_RGB2GRAY)
     plt_show_grey(img_gray)
-    # 自适应阈值处理
+    # Adaptive threshold processing
     retval, img_threshold = cv.threshold(img_gray, 0, 255, cv.THRESH_OTSU)
     plt_show_grey(img_threshold)
     return img_raw, img_gray, img_threshold
 
 
-# 读取文件夹下所有图片的，输入参数是文件名
 def read_images(image_name):
-    referImg_list = []  # 存储路径
-    for fileName in os.listdir(image_name):  # 拿出文件夹下所有文件
-        referImg_list.append(image_name + '/' + fileName)  # 存入list中
+    """
+    Retrieve all images in a folder with the input parameter - file name
+    :param image_name: image name
+    :return:
+    """
+    referImg_list = []  # Storage path
+    for fileName in os.listdir(image_name):  # Take out all the files in the folder
+        referImg_list.append(image_name + '/' + fileName)  # Store in list
     return referImg_list
 
 
-template = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L',
+# Chinese, English, number Characters templates
+char_dict = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F', 'G', 'H', 'J', 'K', 'L',
             'M', 'N', 'P', 'Q', 'R', 'S', 'T', 'U', 'V', 'W',
             'X', 'Y', 'Z',
             '藏', '川', '鄂', '甘', '赣', '贵', '桂', '黑', '沪', '吉', '冀', '津', '晋', '京', '辽', '鲁', '蒙', '闽', '宁',
             '青', '琼', '陕', '苏', '皖', '湘', '新', '渝', '豫', '粤', '云', '浙']
 
 
-# 模板列表（匹配车牌的字符和数字）
 def get_chinese_words():
+    """
+    List of templates (matching the characters and numbers of the license plate)
+    :return:
+    """
     chin_words = []
     for i in range(34, 64):
-        c_word = read_images('../refer_images/' + template[i])
+        c_word = read_images('../refer_images/' + char_dict[i])
         chin_words.append(c_word)
     return chin_words
 
 
-# 英文模板列表（只匹配车牌的第二个字符）
 def get_english_words():
+    """
+    English template list (matches only the second character of the license plate)
+    :return:
+    """
     eng_words = []
     for i in range(10, 34):
-        e_word = read_images('../refer_images/' + template[i])
+        e_word = read_images('../refer_images/' + char_dict[i])
         eng_words.append(e_word)
     return eng_words
 
 
-# 英文数字模板列表（匹配车牌后面的字符）
 def get_eng_num_words():
+    """
+    List of alphanumeric templates
+    :return:
+    """
     eng_num_word = []
     for i in range(0, 34):
-        word = read_images('../refer_images/' + template[i])
+        word = read_images('../refer_images/' + char_dict[i])
         eng_num_word.append(word)
     return eng_num_word
 
 
-# 读取一个模板地址与图片进行匹配，返回得分
-def template_score(template, image):
-    # fromfile()函数读回数据时需要用户指定元素类型，并对数组的形状进行适当的修改
-    template_img = cv.imdecode(np.fromfile(template, dtype=np.uint8), 1)
-    template_img = cv.cvtColor(template_img, cv.COLOR_RGB2GRAY)  # 灰度处理
-    ret, template_img = cv.threshold(
-        template_img, 0, 255, cv.THRESH_OTSU)  # 阈值处理
+def char_dict_score(char_dict, image):
+    """
+    Retrieve a template address to match with an image and return a score
+    :param char_dict: characters dictionary  - template
+    :param image: character image
+    :return: score
+    """
+    char_dict_img = cv.imdecode(np.fromfile(char_dict, dtype=np.uint8), 1)
+    char_dict_img = cv.cvtColor(char_dict_img, cv.COLOR_RGB2GRAY)  # Grayscale processing
+    ret, char_dict_img = cv.threshold(
+        char_dict_img, 0, 255, cv.THRESH_OTSU)  # Threshold processing
     image_input = image.copy()
-    height, width = image_input.shape  # 目标图片和模板的尺寸要相同
-    template_img = cv.resize(template_img, (width, height))  # 改变指定图片的尺寸大小
-    # cv.TM_CCOEFF 计算相关系数, 返回值越大越相似
-    result = cv.matchTemplate(image_input, template_img,
-                              cv.TM_CCOEFF)  # 模板匹配 (图片, 模板, 参数)
+    height, width = image_input.shape  # The target image and the template should be the same size
+    char_dict_img = cv.resize(char_dict_img, (width, height))  # Change the size of the specified image
+    # cv.TM_CCOEFF Calculate the correlation coefficient, the larger the value the more similar it is
+    result = cv.matchTemplate(image_input, char_dict_img,
+                              cv.TM_CCOEFF)  # Template matching (images, templates, parameters)
     return result[0][0]
 
 
-# 使用处理过的图像，与样本模板进行匹配
 def template_matching(word_images):
-    chin_words_list = get_chinese_words()  # 获取中文样本模板图片
-    eng_words_list = get_english_words()  # 获取英文样本模板图片
-    eng_num_words_list = get_eng_num_words()  # 获取英文和数字样本模板图片
+    """
+    Using processed images, matched to sample templates
+    :param word_images: character images need to recognition
+    :return: Recognition result
+    """
+    chin_words_list = get_chinese_words()  # Obtain the Chinese sample template image
+    eng_words_list = get_english_words()  # Obtain the English sample template image
+    eng_num_words_list = get_eng_num_words()  # Obtain English and digital sample template images
 
-    results = []  # 最终车牌结果
+    results = []  # License plate result
     for index, word_image in enumerate(word_images):
-        if index == 0:  # 第一个字符
-            best_score = []  # 最高匹配度值
-            for words in chin_words_list:  # 循环字符
-                score = []  # 存储所有的相似度数值
-                for word in words:  # 进行模板遍历匹配
-                    result = template_score(word, word_image)
-                    score.append(result)  # 储存相似度结果
-                best_score.append(max(score))  # 获取最大相似度值
-            i = best_score.index(max(best_score))  # 获取最大值的下标
-            r = template[34 + i]
-            results.append(r)  # 添加在results[]中
+        if index == 0:  # FirstLetter
+            best_score = []  # Maximum match value
+            for words in chin_words_list:
+                score = []  # Stores all similarity values
+                for word in words:  # Perform template traversal matching
+                    result = char_dict_score(word, word_image)
+                    score.append(result)  # Stores all similarity values
+                best_score.append(max(score))  # Get the maximum similarity value
+            i = best_score.index(max(best_score))  # Get the subscript of the maximum value
+            r = char_dict[34 + i]
+            results.append(r)  # Add to results[]
             continue
-        if index == 1:  # 第二个字符
+        if index == 1:  # The second characters
             best_score = []
             for eng_word_list in eng_words_list:
                 score = []
                 for eng_word in eng_word_list:
-                    result = template_score(eng_word, word_image)
+                    result = char_dict_score(eng_word, word_image)
                     score.append(result)
                 best_score.append(max(score))
             i = best_score.index(max(best_score))
-            r = template[10 + i]
+            r = char_dict[10 + i]
             results.append(r)
             continue
-        else:  # 匹配其他字符
+        else:  # Matching the other characters
             best_score = []
             for eng_num_word_list in eng_num_words_list:
                 score = []
                 for eng_num_word in eng_num_word_list:
-                    result = template_score(eng_num_word, word_image)
+                    result = char_dict_score(eng_num_word, word_image)
                     score.append(result)
                 best_score.append(max(score))
             i = best_score.index(max(best_score))
-            r = template[i]
+            r = char_dict[i]
             results.append(r)
             continue
     return results
